@@ -1,0 +1,8 @@
+# Modified with gedit #
+#######################
+*.*~ 
+
+# Python Compiled     #
+#######################
+*.pyc
+
