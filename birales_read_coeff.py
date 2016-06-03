@@ -14,7 +14,6 @@ parallel_stream = 4
 ant_per_stream  = antenne / parallel_stream 
 MAP = [0,2,4,6,1,3,5,7]
 
-coeff_bytes = 2
 totalchan = 128
 
 
@@ -54,17 +53,18 @@ if __name__ == '__main__':
 
     print('\n===================================\n')
 
+    chan = opts.freq_channel / 2 # Same coeff used for even and odd adjacent channels
 
     reg_name ='phase_EQ'
     reg_type ='_coeff_bram'
      
-    print "\nReading FPGA BRAMs Coefficients...\n\n"
+    print "\nReading FPGA BRAMs Coefficients for frequency channel # %d ...\n\n"%(opts.freq_channel)
     for i in range(parallel_stream):
         for j in range(ant_per_stream):
-            re = struct.unpack('>h',fpga.read("phase_EQ"+str(i)+"_coeff_bram",2,(opts.freq_channel*coeff_bytes)+(totalchan*4*MAP[j])))[0]
-            im = struct.unpack('>h',fpga.read("phase_EQ"+str(i)+"_coeff_bram",2,2+(opts.freq_channel*coeff_bytes)+(totalchan*4*MAP[j])))[0]
+            re = struct.unpack('>h',fpga.read("phase_EQ"+str(i)+"_coeff_bram",2,(chan*4)+(totalchan*4*MAP[j])))[0]
+            im = struct.unpack('>h',fpga.read("phase_EQ"+str(i)+"_coeff_bram",2,2+(chan*4)+(totalchan*4*MAP[j])))[0]
             phase=complex(re / 2**15.,im/ 2**15.)
-            g = struct.unpack('>i',fpga.read("amp_EQ"+str(i)+"_coeff_bram",4,(opts.freq_channel*coeff_bytes*2)+(totalchan*4*MAP[j])))[0]
+            g = struct.unpack('>i',fpga.read("amp_EQ"+str(i)+"_coeff_bram",4,(chan*4)+(totalchan*4*MAP[j])))[0]
 
             print("   Antenna # %2d\t  Phase: %3.1f\tdegs\tGain: %1.5f"%(j+ant_per_stream*i,180./n.pi*n.angle(phase), g/2**16.))
     print('\n===================================\n')
