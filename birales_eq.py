@@ -252,6 +252,7 @@ if __name__ == '__main__':
 
     for ant in range(32):
         print "Antenna %2d, (channel 0): AMPLITUDE: %3.2f\tPHASE (degs): %3.1f"%(ant, amp_coeffs[ant,0], 180./n.pi*n.angle(phs_coeffs[ant,0]))
+        #print "Antenna %2d, (channel 0): AMPLITUDE: %3.2f\tPHASE (degs): %3.1f\tcomplex: %s"%(ant, amp_coeffs[ant,0], 180./n.pi*n.angle(phs_coeffs[ant,0]),phs_coeffs[ant,0])
     
     # Map the antenna numberings used for the coefficients to the numberings used for the f-engine
     # here we assume they are the same
