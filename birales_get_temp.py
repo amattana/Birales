@@ -50,7 +50,12 @@ if __name__ == '__main__':
     p = OptionParser()
     p.set_usage('birales_get_temp.py [options]')
     p.set_description(__doc__)
+    p.add_option('-n', '--ns', dest='not_save',action='store_true', default=False, 
+        help='Do not save output, just show!')
+    opts, args = p.parse_args(sys.argv[1:])
 
+    if opts.not_save==True:
+        print "Option: Don't save in a file!!!"
     client=socket(AF_INET,SOCK_DGRAM)
     client.connect(("192.167.189.101",5001))
     client.settimeout(4)
@@ -62,9 +67,11 @@ if __name__ == '__main__':
     xmlTag=dom.getElementsByTagName('Val')[0].toxml()
     temp=xmlTag.replace('<Val>','').replace('</Val>','')
     print("\nDate\t%s-%s-%s\nTime\t%s:%s:%s"%(date[0:4],date[4:6],date[6:8],date[8:10],date[10:12],date[12:14]))
-    foutname="data/"+time.strftime("%Y-%m-%d_%H%M%S")+"_weather.txt"
-    fout = open(foutname,"w")
-    fout.write("Date\t%s-%s-%s\nTime\t%s:%s:%s"%(date[0:4],date[4:6],date[6:8],date[8:10],date[10:12],date[12:14]))
+    if opts.not_save==False:
+        foutname="data/"+time.strftime("%Y-%m-%d_%H%M%S")+"_weather.txt"
+        fout = open(foutname,"w")
+        fout.write("Date\t%s-%s-%s\nTime\t%s:%s:%s"%(date[0:4],date[4:6],date[6:8],date[8:10],date[10:12],date[12:14]))
+
 
     for i in range(len(sensors)):
         client.send("r "+sensors[i][0])
@@ -73,7 +80,9 @@ if __name__ == '__main__':
         xmlTag=dom.getElementsByTagName('Val')[0].toxml()
         
         print("%s\t%3.1f\t%s"%(sensors[i][1],float(xmlTag.replace('<Val>','').replace('</Val>','')),sensors[i][2]))
-        fout.write("\n%s\t%3.1f\t%s"%(sensors[i][1],float(xmlTag.replace('<Val>','').replace('</Val>','')),sensors[i][2]))
+        if opts.not_save==False:
+            fout.write("\n%s\t%3.1f\t%s"%(sensors[i][1],float(xmlTag.replace('<Val>','').replace('</Val>','')),sensors[i][2]))
            
-    fout.close()
+    if opts.not_save==False:
+        fout.close()
 
