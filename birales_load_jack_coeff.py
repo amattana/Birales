@@ -267,6 +267,8 @@ if __name__ == '__main__':
     p.set_description(__doc__)
     p.add_option('-c', '--config', dest='config_file',default="configura_birales.conf",
         help='Select the Configuration file')
+    p.add_option('-f', '--calib_file', dest='calib_file',default="amp_phase_coeff_from_jack.dat",
+        help='Select the Configuration file')
 
     opts, args = p.parse_args(sys.argv[1:])
     config_file =  opts.config_file
@@ -297,7 +299,8 @@ if __name__ == '__main__':
     JACK_BRAM = 512 * 4 * 8 # NCoeff * DataWidth * Ants
     NEW_BRAM  = 128 * 4 * 8 # NCoeff * DataWidth * Ants
 
-    ofile = open('amp_phase_coeff_from_jack.dat','r')
+    print "Using calib file: "+opts.calib_file
+    ofile = open(opts.calib_file,'r')
 
     reg_name ='amp_EQ'
     reg_type ='_coeff_bram'
@@ -319,6 +322,8 @@ if __name__ == '__main__':
         new_phase = "".join([ a+b+c+d for a,b,c,d in  zip(phase[slice(0, len(phase), 16)], phase[slice(1, len(phase), 16)], phase[slice(2, len(phase), 16)], phase[slice(3, len(phase), 16)])])
         fpga.write(reg_name+str(i)+reg_type,new_phase,0) 
     print "done!"
+
+    os.system('./birales_read_coeff.py')
 
     ofile.close()
     
