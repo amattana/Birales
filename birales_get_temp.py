@@ -52,7 +52,11 @@ if __name__ == '__main__':
     p.set_description(__doc__)
     p.add_option('-n', '--ns', dest='not_save',action='store_true', default=False, 
         help='Do not save output, just show!')
+    p.add_option('-v', '--verbose', dest='verbose',action='store_true', default=False, 
+        help='Be verbose about errors.')
     opts, args = p.parse_args(sys.argv[1:])
+
+    verbose=opts.verbose
 
     if opts.not_save==True:
         print "Option: Don't save in a file!!!"
@@ -66,9 +70,10 @@ if __name__ == '__main__':
     date=xmlTag.replace('<Date>','').replace('</Date>','')
     xmlTag=dom.getElementsByTagName('Val')[0].toxml()
     temp=xmlTag.replace('<Val>','').replace('</Val>','')
-    print("\nDate\t%s-%s-%s\nTime\t%s:%s:%s"%(date[0:4],date[4:6],date[6:8],date[8:10],date[10:12],date[12:14]))
+    if verbose:
+        print("\nDate\t%s-%s-%s\nTime\t%s:%s:%s"%(date[0:4],date[4:6],date[6:8],date[8:10],date[10:12],date[12:14]))
     if opts.not_save==False:
-        foutname="data/"+time.strftime("%Y-%m-%d_%H%M%S")+"_weather.txt"
+        foutname=time.strftime("%Y-%m-%d_%H%M%S")+"_weather.txt"
         fout = open(foutname,"w")
         fout.write("Date\t%s-%s-%s\nTime\t%s:%s:%s"%(date[0:4],date[4:6],date[6:8],date[8:10],date[10:12],date[12:14]))
 
@@ -79,7 +84,8 @@ if __name__ == '__main__':
         dom=parseString(data)
         xmlTag=dom.getElementsByTagName('Val')[0].toxml()
         
-        print("%s\t%3.1f\t%s"%(sensors[i][1],float(xmlTag.replace('<Val>','').replace('</Val>','')),sensors[i][2]))
+        if verbose:
+            print("%s\t%3.1f\t%s"%(sensors[i][1],float(xmlTag.replace('<Val>','').replace('</Val>','')),sensors[i][2]))
         if opts.not_save==False:
             fout.write("\n%s\t%3.1f\t%s"%(sensors[i][1],float(xmlTag.replace('<Val>','').replace('</Val>','')),sensors[i][2]))
            

@@ -375,7 +375,7 @@ if __name__ == '__main__':
     p.set_usage('birales_equalize_rx.py [options]')
     p.set_description(__doc__)
     p.add_option('-c', '--config_file', dest='config_file', type='str',default='configura_birales.conf',
-        help='Configuration File [Default: "./configura.conf"]')
+        help='Configuration File [Default: "./configura_birales.conf"]')
     p.add_option('-r', '--roach_name', dest='roach_name', type='str',default='',
         help='Configuration File [Default: "./configura.conf"]')
     p.add_option('-f', '--file_name', dest='fname', type='str',default='',
