@@ -258,6 +258,20 @@ def write_base_header(base_conf,header):
 #def write_polbram(val,offset,bram):
  #   fpga.write(bram,val.ljust(record[1]),offset)
 
+def check_overflow():
+    status_flag_rst()
+    time.sleep(1)
+    status=fpga.read_uint("status")
+    if (status&(1<<1)):
+        print "    !!!!!!   Amp EQ Overflow   !!!!!!"
+    if (status&(1<<2)):
+        print "    !!!!!!   FFT  Overflow   !!!!!!"
+    if (status&(1<<4)):
+        print "    !!!!!!   Phase EQ Overflow   !!!!!!"
+    if status==0:
+        print "\nAll levels are good!"
+
+
 if __name__ == '__main__':
     from optparse import OptionParser
 
@@ -308,178 +322,8 @@ if __name__ == '__main__':
         print 'ERROR connecting to server %s on port %i.\n'%(roach,katcp_port)
         exit_fail()
 
-    if prog_fpga:
-        prog_feng(roach,bitstream)
-        initialise_ctrl_sw()
-
-    
-    print "Writing base_conf..."
-    write_base_header(base_conf,header)
- 
-    print "Setting N ant to ",base_conf["ants"]
-    fpga.write_int('n_ant',base_conf["ants"])
-
-    print "Setting Frequency channel to ",base_conf["freq_channel"]
-    fpga.write_int('channel',base_conf["freq_channel"])
-
-    #MAP = [0,2,4,6,1,3,5,7,8,10,12,14,9,11,13,15,16,18,20,22,17,19,21,23,24,26,28,30,25,27,29,31] # OLD MAP
-    MAP =[0,8,16,24, 1,9,17,25,  2,10,18,26, 3,11,19,27, 4,12,20,28, 5,13,21,29, 6,14,22,30, 7,15,23,31]
-    adc_map='----------------------------------------------------------------'
-    adc_map+='----------------------------------------------------------------'
-    f_ant = open(configura['ant_order'])
-    ant_list=f_ant.readlines()
-    for i in xrange(len(ant_list)):
-        antennas += [ant_list[i].split()]
-        antennas[i][1] = MAP[int(antennas[i][1])]
-        adc_map = adc_map[:antennas[i][1]*4]+antennas[i][0]+adc_map[antennas[i][1]*4+4:]
-        #if not vecchio:
-        fpga.write('ant_list',struct.pack('>I',antennas[i][1]),i*4)
-    f_ant.close()
-    #print pol_h
-        
-    #f_pol_v = open(configura['pol_v'])
-    #pol_v_list=f_pol_v.readlines()
-    #for i in xrange(len(pol_v_list)):
-    #    pol_v += [pol_v_list[i].split()[0].split('=')]
-    #    pol_v[i][1] = MAP[int(pol_v[i][1])]
-    #    adc_map = adc_map[:pol_v[i][1]*4]+pol_v[i][0]+adc_map[pol_v[i][1]*4+4:]
-    #    #if not vecchio:
-    #    fpga.write('pol_v',struct.pack('>I',pol_v[i][1]),i*4)
-    #f_pol_v.close()
-    #print pol_v
-    write_header('adc_map',adc_map,header)
-    
-    #baseline=''
-    #f_xcorr = open(configura['xcorr'])
-    #xcorr_list=f_xcorr.readlines()
-    #for i in xrange(len(xcorr_list)):
-    #    xcorr += [xcorr_list[i].split()[0].split('_')]
-    #    baseline += xcorr[i][0]+'_'+xcorr[i][1]+'-'
-    #f_xcorr.close()
-    ##if not vecchio:
-    #fpga.write_int('xnum',len(xcorr_list))
-    #baseline = baseline[:-1]+'*'
-    #write_header('baseline',baseline,header)
-    #write_header('baseline_num',len(xcorr_list),header)
-    ##print xcorr
-    ##print pol_h
-    #pols_adc =  pol_h + pol_v
-    #pols = []
-    #for i in range(len(pols_adc)):
-    #    #print pols_adc[i][0]
-    #    pols += [pols_adc[i][0]]
-
-    ##if not vecchio:
-    #a_factor = ""
-    #b_factor = ""
-    ##print pols_adc
-    #for i in range(len(xcorr)):
-    #    a_factor += struct.pack('>I',pols_adc[pols.index(xcorr[i][0])][1])
-    #    b_factor += struct.pack('>I',pols_adc[pols.index(xcorr[i][1])][1])
-    #fpga.write('A_Factor',a_factor,0)
-    #time.sleep(.2)
-    #fpga.write('B_Factor',b_factor,0)
-    #time.sleep(.2)
-    
-    #print "\n HPOL\tANT-F\tVPOL\tANT-F\n-----------------------------"    
-    #for i in xrange(len(pol_h_list)):
-    #    print " "+pol_h[i][0]+"\t  "+str(pol_h[i][1])+"\t"+pol_v[i][0]+"\t  "+str(pol_v[i][1])
-    #    
-    #print "\n\n Correlation List (A * Bconj)\n----------------------------------"    
-    #for i in range(len(xcorr_list))[::2]:
-    #    print " "+xcorr[i][0]+" <---> "+xcorr[i][1]+"    "+xcorr[i+1][0]+" <---> "+xcorr[i+1][1]
-        
-
-    print "\nStarting interface %s"%(gbe_freq_name)
-    fpga.write_int(gbe_freq_name+'_destip',gbe_freq_dest_ip)
-    time.sleep(0.3)
-    fpga.write_int(gbe_freq_name+'_destport',gbe_freq_dest_port)
-    time.sleep(0.3)
-    fpga.write_int(gbe_freq_name+'_len',gbe_freq_pkt_len)
-    time.sleep(0.3)
-    ipconv = str(int((gbe_freq_dest_ip & 255*256*256*256) >> 24))
-    ipconv += "."+str(int((gbe_freq_dest_ip & 255*256*256) >> 16))
-    ipconv += "."+str(int((gbe_freq_dest_ip & 255*256) >> 8))
-    ipconv += "."+str(int(gbe_freq_dest_ip & 255))
-    print "Set UDP packets destination IP:Port to %s:%d"%(ipconv,gbe_freq_dest_port)
-    print "Set packetizer register to %d \n  UDP Packets size will be %d Bytes"%(gbe_freq_pkt_len,(gbe_freq_pkt_len+1)*8)
-    print "    Packet format will be:\n      - 8 Bytes for the sequence counter"
-    print "      - %d groups of %d antennas (4 Bytes for Real and 4 Bytes for Imag each)"%(gbe_freq_pkt_len/base_conf["ants"],base_conf["ants"]) 
-    ip = 3232238524
-    mac = (0<<40) + (96<<32) + ip
-    fpga.tap_start('tap0', gbe_freq_name, mac, ip, gbe_freq_dest_port) 
-    time.sleep(0.3)
-    print "UDP packets started!\n"
-    #print('\n===================================\n')
-
-
-    time.sleep(0.1)
-    set_fft_shift(fft_shift)
-    
-    jump_eq_amp_flag=True
-    if jump_eq_amp_flag:
-        print "EQ AMP FLAG: ",jump_eq_amp_flag,", it means the amplitude equalization block is active!"
-    else:
-        print "EQ AMP FLAG: ",jump_eq_amp_flag,", it means the amplitude equalization block is skipped!"
-    jump_eq_amp(jump_eq_amp_flag)
-    
-    print   '\n   Calibrating ADC on %s' %(roach)
-    adc_cal();
-    time.sleep(0.05)
-    fpga.write_int('adc_spi_ctrl', 1)
-    time.sleep(.05)
-    fpga.write_int('adc_spi_ctrl', 0)
-    time.sleep(.05)
-    time.sleep(0.5)
-    check_adc_sync()
-    time.sleep(0.5)
-    check_adc_sync()
-    time.sleep(0.5)
-    check_adc_sync()
-    time.sleep(0.5)
-    check_adc_sync()
-    time.sleep(0.5)
-    check_adc_sync()
-
-    # ARM THE FENGINE
-    print ''' Arming F Engine and setting FFT Shift...''',
-    sys.stdout.flush()
-    trig_time=feng_arm()
-    print ' Armed.\nExpect trigger at %s local (%s UTC).'%(time.strftime('%H:%M:%S',time.localtime(trig_time)),time.strftime('%H:%M:%S',time.gmtime(trig_time))), 
-    print "Updating header BRAM with %s=%d"%('t_zero',trig_time)
-    write_header('t_zero',trig_time,header)
-    print "Read from header t_zero=%d"%(read_header('t_zero',header))
-    print "Updating header BRAM with %s=%d"%('fft_shift',fft_shift)
-    write_header('fft_shift',fft_shift,header)
-    print "Read from header fft_shift=%d"%(read_header('fft_shift',header))
-    #Control Settings
-    #fpga.write_int('sim', 1)
-    sync_arm = False
-    sync_rst = False
-
-    arm_sync()
-
-    if not opts.skip_eq:
-        os.system('./birales_eq.py -A eq/eq_amp_1.txt -P eq/eq_phs_1.txt')
-        #os.system('./birales_eq.py -A eq/'+eq_amp+' -P eq/'+eq_phase)
-        #os.system('./birales_load_jack_coeff.py')
-    time.sleep(1)
-    fpga.write_int('gbe_reset',0)
-    fpga.write_int('gbe_reset',1)
-    time.sleep(1)
-    fpga.write_int('gbe_reset',0)
-    fpga.write_int('gbe_reset',1)
-    time.sleep(1)
-    fpga.write_int('gbe_reset',0)
-    fpga.write_int('gbe_reset',1)
-    #for i in range(5):
-    #    print "Interface status:"
-    #    print "  - TX OverFlow: %d"%(fpga.read_uint('gbe_freq_txof'))
-    #    print "  - TX EOF: %d"%(fpga.read_uint('pkt_eof'))
-    #    #print "  - Data: %d"%(fpga.read_uint('freq_valid'))
-
-    #    time.sleep(1)
-    
+    check_overflow()
+    print
 
 
 

@@ -140,7 +140,23 @@ def get_adc_power(antenna):
 
     #if ant<10: print '\tADC0%i:     polX:%.5f (%2.2f bits used)     polY:%.5f (%2.2f bits used)'%(ant,rmsX,bitsX,rmsY,bitsY)
     #else: print '\tADC%i:     polX:%.5f (%2.2f bits used)     polY:%.5f (%2.2f bits used)'%(ant,rmsX,bitsX,rmsY,bitsY)
+    return  rmsX*2**(adc_bits-1), bitsX
+
+def get_adc_pow(antenna):
+    adc_levels_acc_len = 32
+    adc_bits = 12
+
+    fpga.write_int('adc_sw_adc_sel',antenna)
+    time.sleep(.05)
+    rv=fpga.read_uint('adc_sw_adc_sum_sq')
+            
+    pwrX = float(rv)
+    rmsX = numpy.sqrt(pwrX/adc_levels_acc_len)/(2**(adc_bits-1))
+    bitsX = max(numpy.log2(rmsX * (2**(adc_bits))), 0.)
+
     return  bitsX
+
+
 
 def get_eq_power(antenna):
     adc_levels_acc_len = 32
@@ -437,19 +453,19 @@ if __name__ == '__main__':
 	    ntempo=time.time()
 	    tempo=str(datetime.datetime.utcfromtimestamp(ntempo))
 	    #print str(ntempo)+"\t"+str(tempo)+"\t",
-            print "\n  BEST\t\tFeng\tBits\t dBm \tRxdB\tdiff",
+            print "\n  BEST\t\tFeng\tBits\t RMS \t dBm \tRxdB\tdiff",
             if not opts.eqvalue == -50:
-                print "\t\t dBm \tRxdB\tdiff\n-------------------------------------------------------      -------------------------"
+                print "\t\t dBm \tRxdB\tdiff\n---------------------------------------------------------------      -------------------------"
             else:
-                print "\n------------------------------------------------------- "
+                print "\n--------------------------------------------------------------- "
 	    for i in xrange(len(antennas)):
 		#powH = get_adc_power(pol_h[i][1])  corretta
-		powA = get_adc_power(antennas[i][1])
+		rmsA, powA = get_adc_power(antennas[i][1])
 		rx_att_A = get_att_value(s,antennas[i][2],antennas[i][3])
                 if (i == 0) and (opts.eqvalue == -50):
                     eqvalue = bit2db(powA)
 		diffA = eqvalue-bit2db(powA)
-		print('%s\t\t %s\t%2.2f\t%2.2f\t%2.1f\t%2.1f'%(antennas[i][0],antennas[i][1],powA,bit2db(powA),rx_att_A,diffA)),
+		print('%s\t\t %s\t%2.2f\t %d\t%2.2f\t%2.1f\t%2.1f'%(antennas[i][0],antennas[i][1],powA,rmsA,bit2db(powA),rx_att_A,diffA)),
 
                 if not opts.eqvalue == -50:
                     if diffA<0:
@@ -457,7 +473,7 @@ if __name__ == '__main__':
                     else:
                         set_att_value(s,antennas[i][2],antennas[i][3],numpy.clip([rx_att_A-diffA],0,31.5)[0])
 
-		    powA = get_adc_power(antennas[i][1])
+		    rmsA, powA = get_adc_power(antennas[i][1])
 		    rx_att_A = get_att_value(s,antennas[i][2],antennas[i][3])
 		    diffA = eqvalue-bit2db(powA)
 		    print('\t-->\t%2.2f\t%2.1f\t%2.1f'%(bit2db(powA),rx_att_A,diffA))
@@ -503,8 +519,8 @@ if __name__ == '__main__':
 		    x=0
 		    #print "\n HPOL\tBITS\t  dB \t  eq \tVPOL\tBITS\t  dB  \t  eq \n----------------------------------------------"    
 		    #print "\n HPOL\tBITS\t  dB \tVPOL\tBITS\t  dB \n----------------------------------------------"
-		    screen.addstr(x,2,"\n  BEST\t\tFeng\tBits\t dBm \tRxdB\tdiff\n---------------------------------------------------")
-		    x=4    
+		    screen.addstr(x,2,"\n  BEST\t\tFeng\tBits\t dBm \tRxdB\tdiff\n---------------------------------------------------------")
+		    x=3    
 		    powA=[]
 		    rx_att_A=[]
 		    eqpowA=[]
@@ -515,7 +531,7 @@ if __name__ == '__main__':
 		    record=str(ntempo)+"\t"+str(tempo)+"\t"
 		    for i in xrange(len(antennas)):
 			#powH = get_adc_power(pol_h[i][1])  corretta
-			powA += [get_adc_power(antennas[i][1])]
+			powA += [get_adc_pow(antennas[i][1])] # ANDREA
 			record+= ("%2.2f"%(bit2db(powA[i]))+"\t")
 			if startup or equalizing:
 			    #ip, slave = get_addr(pol_h[i][2])
@@ -531,31 +547,38 @@ if __name__ == '__main__':
 			#screen.refresh()
 			x=x+1
 			#print "."
-		    screen.addstr(x+1,1,str(datetime.datetime.utcfromtimestamp(time.time()))+" UTC")
+		    screen.addstr(x+2,1,str(datetime.datetime.utcfromtimestamp(time.time()))+" UTC")
 		    ofile.write(record+"\n")
 		    starup = False
 	    
 		    status_flag_rst()
 		    time.sleep(0.01)
 		    status = fpga.read_uint('status')
-		    if (status&(1<<1)):
-			screen.addstr(x+4,1,"    !!!!!!   Amp EQ Overflow   !!!!!!")
-		    else:
-			screen.addstr(x+4,1,"                                     ")
-		    if (status&(1<<2)):
-			screen.addstr(x+5,1,"    !!!!!!     FFT Overflow    !!!!!!")
-		    else:
-			screen.addstr(x+5,1,"                                     ")
-		    if (status&(1<<4)):
-			screen.addstr(x+6,1,"    !!!!!!  Phase EQ Overflow  !!!!!!")
-		    else:
-			screen.addstr(x+6,1,"                                     ")
-		    if (status&(1<<6)):
-			screen.addstr(x+7,1,"    !!!!!!    Sync Gen Armed   !!!!!!")
-		    else:
-			screen.addstr(x+7,1,"                                     ")
+                    screen.addstr(x,5,"STATUS: ("+str(status)+")")
+                    #print status
+                    if status==0:
+			screen.addstr(x,20,"OK ")
 
-		    screen.addstr(x+12,1,"Press [q] key to Exit")
+		    if (status&(1<<1)):
+			screen.addstr(x,25,"AMP")
+		    else:
+			screen.addstr(x,25,"   ")
+
+		    if (status&(1<<2)):
+			screen.addstr(x,30,"FFT")
+		    else:
+			screen.addstr(x,30,"   ")
+
+		    if (status&(1<<4)):
+			screen.addstr(x,35,"PHS")
+		    else:
+			screen.addstr(x,35,"   ")
+		    if (status&(1<<6)):
+			screen.addstr(x,40,"Sync")
+		    else:
+			screen.addstr(x,40,"    ")
+
+		    screen.addstr(x+4,1,"Keys: [q] Exit | [e] Equalize")
 		    if equalizing:
 			iter_count=iter_count +1
 			if (iter_count==iter_counts):
@@ -584,8 +607,8 @@ if __name__ == '__main__':
 			    equalizing=True
 			        
 			    
-			if char == None:
-			    screen.addstr(x+9,1,"Press [e] key to Equalize Antennas      ")
+			#if char == None:
+			    #screen.addstr(x+9,1,"Press [e] key to Equalize Antennas      ")
 			
 		    
 		    screen.move(dims[0]-1,dims[1]-1)

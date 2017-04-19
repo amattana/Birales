@@ -79,10 +79,13 @@ body_list = []
 if opts.verbose:
     print '######################################################################################################'
 for rn,row in enumerate(catlist):
+    if row=='':
+        break
     if opts.verbose:
         print 'Parsing object %d of %d:'%(rn+1,n_entries),
     cells = row.split(',')
     name = '3C'+ cells[0]
+    #print row,cells
     ra = cells[1].replace(' ',':')
     dec = cells[2].replace(' ',':')
     flux = n.log10(float(cells[3])) #log flux, so we can store in the magnitude field, which has a relatively small range

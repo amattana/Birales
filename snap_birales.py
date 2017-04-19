@@ -10,7 +10,7 @@ import PyQt4.uic as uic
 # Matplotlib stuff
 import matplotlib
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+#from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar # ANDREA
 from matplotlib.figure import Figure
 import matplotlib.ticker as ticker
 
@@ -43,9 +43,9 @@ class MatplotlibPlot:
         self.canvas.setParent(parent)
 
         # Create the navigation toolbar, tied to the canvas
-        self.toolbar = NavigationToolbar(self.canvas, parent)
+        #self.toolbar = NavigationToolbar(self.canvas, parent) #ANDREA
         self.canvas.show()
-        self.toolbar.show()
+        #self.toolbar.show() #ANDREA
 
         # Reset the plot landscape
         self.figure.clear()
@@ -315,6 +315,7 @@ class NicePlotter(gui.QMainWindow):
                     self.setPlotProgress(np.round(plot_number*single_plot_progress))
                     plot_number += 1
             self.matlabPlot.updatePlot()
+            #self.matlabPlot.figure.tight_layout() #ANDREA
 
     def exit_fail(self):
         print 'FAILURE DETECTED. Log entries:\n', self.lh.printMessages()
