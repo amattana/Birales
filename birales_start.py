@@ -320,10 +320,10 @@ if __name__ == '__main__':
     fpga.write_int('n_ant',base_conf["ants"])
 
     print "Setting Frequency channel to ",base_conf["freq_channel"]
-    fpga.write_int('channel',base_conf["freq_channel"])
+    fpga.write_int('channel1',base_conf["freq_channel"])
 
-    #MAP = [0,2,4,6,1,3,5,7,8,10,12,14,9,11,13,15,16,18,20,22,17,19,21,23,24,26,28,30,25,27,29,31] # OLD MAP
-    MAP =[0,8,16,24, 1,9,17,25,  2,10,18,26, 3,11,19,27, 4,12,20,28, 5,13,21,29, 6,14,22,30, 7,15,23,31]
+    #MAP = [0,2,4,6,1,3,5,7,8,10,12,14,9,11,13,15,16,18,20,22,17,19,21,23,24,26,28,30,25,27,29,31] # OLD MAP ordered in N/S even/odd
+    MAP =[0,8,16,24, 1,9,17,25, 2,10,18,26, 3,11,19,27, 4,12,20,28, 5,13,21,29, 6,14,22,30, 7,15,23,31] # ordered per cylinder from 1 to 8
     adc_map='----------------------------------------------------------------'
     adc_map+='----------------------------------------------------------------'
     f_ant = open(configura['ant_order'])
@@ -460,7 +460,7 @@ if __name__ == '__main__':
     arm_sync()
 
     if not opts.skip_eq:
-        os.system('./birales_eq.py -A eq/eq_amp_1.txt -P eq/eq_phs_1.txt')
+        os.system('./birales_load_coeff.py -A eq/eq_amp_1.txt -P eq/eq_phs_1.txt')
         #os.system('./birales_eq.py -A eq/'+eq_amp+' -P eq/'+eq_phase)
         #os.system('./birales_load_jack_coeff.py')
     time.sleep(1)
